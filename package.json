@@ -1,0 +1,40 @@
+{
+  "name": "clone-expressjs-errorhandler",
+  "version": "1.0.0",
+  "description": "Clone [expressjs/errorhandler: Development-only error handler middleware](https://github.com/expressjs/errorhandler) for study.",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint --plugin markdown --ext js,md .",
+    "test": "mocha --reporter spec --bail --check-leaks test/",
+    "test-cov": "istanbul cover node_modules/mocha/bin/_mocha -- --reporter dot --check-leaks test/",
+    "test-travis": "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --reporter spec --check-leaks test/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/yinm/clone-expressjs-errorhandler.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yinm/clone-expressjs-errorhandler/issues"
+  },
+  "homepage": "https://github.com/yinm/clone-expressjs-errorhandler#readme",
+  "dependencies": {
+    "accepts": "~1.3.4",
+    "escape-html": "~1.0.3"
+  },
+  "devDependencies": {
+    "after": "0.8.2",
+    "eslint": "3.19.0",
+    "eslint-config-standard": "10.2.1",
+    "eslint-plugin-import": "2.8.0",
+    "eslint-plugin-markdown": "1.0.0-beta.6",
+    "eslint-plugin-node": "5.2.1",
+    "eslint-plugin-promise": "3.6.0",
+    "eslint-plugin-standard": "3.0.1",
+    "istanbul": "0.4.5",
+    "mocha": "2.5.3",
+    "supertest": "1.1.0"
+  }
+}
