@@ -157,3 +157,21 @@ function escapeHtmlBlock(str) {
     .replace(NEW_LINE_REGEXP, '<br>')
 }
 
+/**
+ * Stringify a value.
+ * @api private
+ */
+function stringify(val) {
+  const stack = val.stack
+
+  if (stack) {
+    return String(stack)
+  }
+
+  const str = String(val)
+
+  return str === toString.call(val)
+    ? inspect(val)
+    : str
+}
+
