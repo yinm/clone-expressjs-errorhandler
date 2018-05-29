@@ -142,3 +142,18 @@ exports = module.exports = function errorHandler(options) {
   }
 }
 
+/**
+ * Template title, framework authors may override this value.
+ */
+exports.title = 'Connect'
+
+/**
+ * Escape a block of HTML, preserving whitespace.
+ * @api private
+ */
+function escapeHtmlBlock(str) {
+  return escapeHtml(str)
+    .replace(DOUBLE_SPACE_REGEXP, '&nbsp;')
+    .replace(NEW_LINE_REGEXP, '<br>')
+}
+
