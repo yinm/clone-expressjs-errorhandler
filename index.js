@@ -175,3 +175,10 @@ function stringify(val) {
     : str
 }
 
+/**
+ * Log error to console.
+ * @api private
+ */
+function logerror(err, str) {
+  console.error(str || err.stack)
+}
