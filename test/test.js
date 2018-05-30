@@ -48,6 +48,15 @@ describe('errorHandler()', () => {
       })
     })
 
+    describe('when err.statusCode and err.status exist', () => {
+      it('should prefer err.status', (done) => {
+        const server = createServer({statusCode: 400, status: 404})
+
+        request(server)
+          .get('/')
+          .expect(404, done)
+      })
+    })
   })
 
 })
