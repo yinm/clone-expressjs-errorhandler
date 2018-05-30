@@ -38,6 +38,16 @@ describe('errorHandler()', () => {
       })
     })
 
+    describe('when err.statusCode exists', () => {
+      it('should set res.statusCode', (done) => {
+        const server = createServer({statusCode: 404})
+
+        request(server)
+          .get('/')
+          .expect(404, done)
+      })
+    })
+
   })
 
 })
