@@ -18,3 +18,14 @@ describe('errorHandler()', () => {
   })
 
 })
+
+function createServer(error, options) {
+  const _errorHandler = errorHandler(options)
+
+  return http.createServer((req, res) => {
+    _errorHandler(error, req, res, (err) => {
+      res.statusCode = err ? 500 : 404
+      res.end(err ? `Critical: ${err.stack}` : 'oops')
+    })
+  })
+}
