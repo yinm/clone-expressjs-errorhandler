@@ -17,6 +17,19 @@ describe('errorHandler()', () => {
       .expect(500, done)
   })
 
+  describe('status code', () => {
+    describe('when non-error status code', () => {
+      it('should set the status code to 500', (done) => {
+        const server = createServer({status: 200})
+
+        request(server)
+          .get('/')
+          .expect(500, done)
+      })
+    })
+
+  })
+
 })
 
 function createServer(error, options) {
