@@ -59,6 +59,21 @@ describe('errorHandler()', () => {
     })
   })
 
+  describe('error value', () => {
+    describe('when Error object', () => {
+      it('should use "stack" property', (done) => {
+        const error = new TypeError('boom!')
+        const server = createServer(error)
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect(500, error.stack.toString(), done)
+      })
+    })
+
+  })
+
 })
 
 function createServer(error, options) {
