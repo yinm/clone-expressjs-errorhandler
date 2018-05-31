@@ -105,6 +105,16 @@ describe('errorHandler()', () => {
       })
     })
 
+    describe('with "toString" property', () => {
+      it('should use "toString" value', (done) => {
+        const server = createServer({toString: () => 'boom!'})
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect(500, 'boom!', done)
+      })
+    })
   })
 
 })
