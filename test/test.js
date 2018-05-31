@@ -72,6 +72,17 @@ describe('errorHandler()', () => {
       })
     })
 
+    describe('when string', () => {
+      it('should  pass-through string', (done) => {
+        const server = createServer('boom!')
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect(500, 'boom!', done)
+      })
+    })
+
   })
 
 })
