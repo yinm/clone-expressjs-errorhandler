@@ -214,6 +214,41 @@ describe('errorHandler()', () => {
     })
   })
 
+  describe('console', () => {
+    let _consoleerror
+
+    before(() => {
+      _consoleerror = console.error
+      process.env.NODE_ENV = ''
+    })
+
+    afterEach(() => {
+      console.error = _consoleerror
+      process.env.NODE_ENV = 'test'
+    })
+
+    it('should output error', (done) => {
+      const cb = after(2, done)
+      const error = new Error('boom!')
+      const server = createServer(error)
+
+      console.error = function() {
+        const log = util.format.apply(null, arguments)
+
+        if (log !== error.stack.toString()) {
+          return _consoleerror.apply(this, arguments)
+        }
+
+        cb()
+      }
+
+      request(server)
+        .get('/')
+        .set('Accept', 'text/plain')
+        .expect(500, error.stack.toString(), cb)
+    })
+  })
+
 })
 
 function createServer(error, options) {
