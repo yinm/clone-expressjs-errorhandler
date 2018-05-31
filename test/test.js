@@ -139,6 +139,16 @@ describe('errorHandler()', () => {
           .expect(500, done)
       })
 
+      it('should contain inspected object', (done) => {
+        request(createServer({ foo: 'bar', fizz: 'buzz' }))
+          .get('/')
+          .set('Accept', 'text/html')
+          .expect('Content-Type', /text\/html/)
+          .expect(/<title>Error<\/title>/)
+          .expect(/<h2><em>500<\/em> Error<\/h2>/)
+          .expect(/<li>{ foo: &#39;bar&#39;, fizz: &#39;buzz&#39; }<\/li>/)
+          .expect(500, done)
+      })
     })
 
   })
