@@ -127,7 +127,7 @@ describe('errorHandler()', () => {
       server = createServer(error)
     })
 
-    describe('when "Accpet: text/html"', () => {
+    describe('when "Accept: text/html"', () => {
       it('should return a html response', (done) => {
         request(server)
           .get('/')
@@ -148,6 +148,24 @@ describe('errorHandler()', () => {
           .expect(/<h2><em>500<\/em> Error<\/h2>/)
           .expect(/<li>{ foo: &#39;bar&#39;, fizz: &#39;buzz&#39; }<\/li>/)
           .expect(500, done)
+      })
+    })
+
+    describe('when "Accept: application/json', () => {
+      it('should return a json response', (done) => {
+        const body = {
+          error: {
+            message: 'boom!',
+            description: 'it went this way',
+            stack: error.stack.toString()
+          }
+        }
+
+        request(server)
+          .get('/')
+          .set('Accept', 'application/json')
+          .expect('Content-Type', /application\/json/)
+          .expect(500, body, done)
       })
     })
 
