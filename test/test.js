@@ -83,6 +83,17 @@ describe('errorHandler()', () => {
       })
     })
 
+    describe('when number', () => {
+      it('should stringify number', (done) => {
+        const server = createServer(42.1)
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect(500, '42.1', done)
+      })
+    })
+
   })
 
 })
