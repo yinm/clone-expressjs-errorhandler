@@ -190,6 +190,30 @@ describe('errorHandler()', () => {
     })
   })
 
+  describe('headers sent', () => {
+    let server
+
+    before(() => {
+      const _errorHandler = errorHandler()
+      server = http.createServer((req, res) => {
+        res.end('0')
+        process.nextTick(() => {
+          _errorHandler(new Error('boom!'), req, res, (error) => {
+            process.nextTick(() => {
+              throw error
+            })
+          })
+        })
+      })
+    })
+
+    it('should not die', (done) => {
+      request(server)
+        .get('/')
+        .expect(200, done)
+    })
+  })
+
 })
 
 function createServer(error, options) {
