@@ -169,6 +169,16 @@ describe('errorHandler()', () => {
       })
     })
 
+    describe('when "Accept: text/plain', () => {
+      it('should return a plain text response', (done) => {
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect('Content-Type', /text\/plain/)
+          .expect(500, error.stack.toString(), done)
+      })
+    })
+
   })
 
 })
