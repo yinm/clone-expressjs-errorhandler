@@ -117,6 +117,32 @@ describe('errorHandler()', () => {
     })
   })
 
+  describe('response content type', () => {
+    let error
+    let server
+
+    before(() => {
+      error = new Error('boom!')
+      error.description = 'it went this way'
+      server = createServer(error)
+    })
+
+    describe('when "Accpet: text/html"', () => {
+      it('should return a html response', (done) => {
+        request(server)
+          .get('/')
+          .set('Accept', 'text/html')
+          .expect('Content-Type', /text\/html/)
+          .expect(/<title>Error: boom!<\/title>/)
+          .expect(/<h2><em>500<\/em> Error: boom!<\/h2>/)
+          .expect(/<li> &nbsp; &nbsp;at/)
+          .expect(500, done)
+      })
+
+    })
+
+  })
+
 })
 
 function createServer(error, options) {
