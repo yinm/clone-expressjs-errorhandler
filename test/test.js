@@ -151,7 +151,7 @@ describe('errorHandler()', () => {
       })
     })
 
-    describe('when "Accept: application/json', () => {
+    describe('when "Accept: application/json"', () => {
       it('should return a json response', (done) => {
         const body = {
           error: {
@@ -169,7 +169,7 @@ describe('errorHandler()', () => {
       })
     })
 
-    describe('when "Accept: text/plain', () => {
+    describe('when "Accept: text/plain"', () => {
       it('should return a plain text response', (done) => {
         request(server)
           .get('/')
@@ -179,6 +179,15 @@ describe('errorHandler()', () => {
       })
     })
 
+    describe('when "Accept: x-unknown"', () => {
+      it('should return a plain text response', (done) => {
+        request(server)
+          .get('/')
+          .set('Accept', 'x-unknown')
+          .expect('Content-Type', /text\/plain/)
+          .expect(500, error.stack.toString(), done)
+      })
+    })
   })
 
 })
