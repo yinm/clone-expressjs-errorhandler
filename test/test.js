@@ -248,7 +248,15 @@ describe('errorHandler()', () => {
         .expect(500, error.stack.toString(), cb)
     })
   })
+})
 
+describe('errorHandler(options)', () => {
+  describe('log', () => {
+    it('should reject a string', () => {
+      assert.throws(errorHandler.bind(null, {log: 'yes, please'}), /option log must be/)
+    })
+
+  })
 })
 
 function createServer(error, options) {
