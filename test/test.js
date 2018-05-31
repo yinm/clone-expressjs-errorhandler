@@ -291,6 +291,30 @@ describe('errorHandler(options)', () => {
         })
       })
 
+      describe('when NODE_ENV != test', () => {
+        alterEnvironment('NODE_ENV', '')
+
+        it('should write to console', (done) => {
+          const cb = after(2, done)
+          const error = new Error('boom!')
+          const server = createServer(error)
+
+          console.error = function() {
+            const log = util.format.apply(null, arguments)
+
+            if (log !== error.stack.toString()) {
+              return _consoleerror.apply(this, arguments)
+            }
+
+            cb()
+          }
+
+          request(server)
+            .get('/')
+            .set('Accept', 'text/plain')
+            .expect(500, error.stack.toString(), cb)
+        })
+      })
     })
 
   })
