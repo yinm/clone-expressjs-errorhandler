@@ -256,6 +256,43 @@ describe('errorHandler(options)', () => {
       assert.throws(errorHandler.bind(null, {log: 'yes, please'}), /option log must be/)
     })
 
+    describe('when "undefined"', () => {
+      let _consoleerror
+
+      before(() => {
+        _consoleerror = console.error
+      })
+
+      afterEach(() => {
+        console.error = _consoleerror
+      })
+
+      describe('when NODE_ENV == test', () => {
+        alterEnvironment('NODE_ENV', 'test')
+
+        it('should produce no output', (done) => {
+          const error = new Error('boom!')
+          const server = createServer(error)
+
+          console.error = function() {
+            const log = util.format.apply(null, arguments)
+
+            if (log !== error.stack.toString()) {
+              return _consoleerror.apply(this, arguments)
+            }
+
+            done(new Error('console.error written to'))
+          }
+
+          request(server)
+            .get('/')
+            .set('Accept', 'text/plain')
+            .expect(500, error.stack.toString(), done)
+        })
+      })
+
+    })
+
   })
 })
 
@@ -267,5 +304,17 @@ function createServer(error, options) {
       res.statusCode = err ? 500 : 404
       res.end(err ? `Critical: ${err.stack}` : 'oops')
     })
+  })
+}
+
+function alterEnvironment(key, value) {
+  let prev
+
+  before(() => {
+    prev = process.env[key]
+    process.env[key] = value
+  })
+  after(() => {
+    process.env[key] = prev
   })
 }
