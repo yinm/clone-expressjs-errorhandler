@@ -94,6 +94,17 @@ describe('errorHandler()', () => {
       })
     })
 
+    describe('when object', () => {
+      it('should use util.inspect', (done) => {
+        const server = createServer({hop: 'pop'})
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect(500, '{ hop: \'pop\' }', done)
+      })
+    })
+
   })
 
 })
