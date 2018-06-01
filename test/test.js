@@ -317,6 +317,39 @@ describe('errorHandler(options)', () => {
       })
     })
 
+    describe('when "true"', () => {
+      let _consoleerror
+
+      before(() => {
+        _consoleerror = console.error
+      })
+
+      afterEach(() => {
+        console.error = _consoleerror
+      })
+
+      it('should write to console', (done) => {
+        const cb = after(2, done)
+        const error = new Error('boom!')
+        const server = createServer(error, {log: true})
+
+        console.error = function() {
+          const log = util.format.apply(null, arguments)
+
+          if (log !== error.stack.toString()) {
+            return _consoleerror.apply(this, arguments)
+          }
+
+          cb()
+        }
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect(500, error.stack.toString(), cb)
+      })
+    })
+
   })
 })
 
