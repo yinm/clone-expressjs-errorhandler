@@ -350,6 +350,40 @@ describe('errorHandler(options)', () => {
       })
     })
 
+    describe('when "false"', () => {
+      let _consoleerror
+
+      alterEnvironment('NODE_ENV', '')
+
+      before(() => {
+        _consoleerror = console.error
+      })
+
+      afterEach(() => {
+        console.error = _consoleerror
+      })
+
+      it('should not write to console', (done) => {
+        const error = new Error('boom!')
+        const server = createServer(error, {log: false})
+
+        console.error = function() {
+          const log = util.format.apply(null, arguments)
+
+          if (log !== error.stack.toString()) {
+            return _consoleerror.apply(this, arguments)
+          }
+
+          done(new Error('console.error written to'))
+        }
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect(500, error.stack.toString(), done)
+      })
+    })
+
   })
 })
 
