@@ -384,6 +384,26 @@ describe('errorHandler(options)', () => {
       })
     })
 
+    describe('when a function', () => {
+      it('should call function', (done) => {
+        const cb = after(2, done)
+        const error = new Error('boom!')
+        const server = createServer(error, {log: log})
+
+        function log(err, str, req, res) {
+          assert.equal(err, error)
+          assert.equal(str, error.stack.toString())
+          assert.equal(req.url, '/')
+          assert.equal(res.statusCode, 500)
+          cb()
+        }
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect(500, error.stack.toString(), cb)
+      })
+    })
   })
 })
 
