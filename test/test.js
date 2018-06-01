@@ -1,0 +1,431 @@
+process.env.NODE_ENV = 'test'
+
+const after = require('after')
+const assert = require('assert')
+const errorHandler = require('..')
+const http = require('http')
+const request = require('supertest')
+const util = require('util')
+
+describe('errorHandler()', () => {
+  it('should set nosniff header', (done) => {
+    const server = createServer(new Error('boom!'))
+
+    request(server)
+      .get('/')
+      .expect('X-Content-Type-Options', 'nosniff')
+      .expect(500, done)
+  })
+
+  describe('status code', () => {
+    describe('when non-error status code', () => {
+      it('should set the status code to 500', (done) => {
+        const server = createServer({status: 200})
+
+        request(server)
+          .get('/')
+          .expect(500, done)
+      })
+    })
+
+    describe('when err.status exists', () => {
+      it('should set res.statusCode', (done) => {
+        const server = createServer({status: 404})
+
+        request(server)
+          .get('/')
+          .expect(404, done)
+      })
+    })
+
+    describe('when err.statusCode exists', () => {
+      it('should set res.statusCode', (done) => {
+        const server = createServer({statusCode: 404})
+
+        request(server)
+          .get('/')
+          .expect(404, done)
+      })
+    })
+
+    describe('when err.statusCode and err.status exist', () => {
+      it('should prefer err.status', (done) => {
+        const server = createServer({statusCode: 400, status: 404})
+
+        request(server)
+          .get('/')
+          .expect(404, done)
+      })
+    })
+  })
+
+  describe('error value', () => {
+    describe('when Error object', () => {
+      it('should use "stack" property', (done) => {
+        const error = new TypeError('boom!')
+        const server = createServer(error)
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect(500, error.stack.toString(), done)
+      })
+    })
+
+    describe('when string', () => {
+      it('should  pass-through string', (done) => {
+        const server = createServer('boom!')
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect(500, 'boom!', done)
+      })
+    })
+
+    describe('when number', () => {
+      it('should stringify number', (done) => {
+        const server = createServer(42.1)
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect(500, '42.1', done)
+      })
+    })
+
+    describe('when object', () => {
+      it('should use util.inspect', (done) => {
+        const server = createServer({hop: 'pop'})
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect(500, '{ hop: \'pop\' }', done)
+      })
+    })
+
+    describe('with "toString" property', () => {
+      it('should use "toString" value', (done) => {
+        const server = createServer({toString: () => 'boom!'})
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect(500, 'boom!', done)
+      })
+    })
+  })
+
+  describe('response content type', () => {
+    let error
+    let server
+
+    before(() => {
+      error = new Error('boom!')
+      error.description = 'it went this way'
+      server = createServer(error)
+    })
+
+    describe('when "Accept: text/html"', () => {
+      it('should return a html response', (done) => {
+        request(server)
+          .get('/')
+          .set('Accept', 'text/html')
+          .expect('Content-Type', /text\/html/)
+          .expect(/<title>Error: boom!<\/title>/)
+          .expect(/<h2><em>500<\/em> Error: boom!<\/h2>/)
+          .expect(/<li> &nbsp; &nbsp;at/)
+          .expect(500, done)
+      })
+
+      it('should contain inspected object', (done) => {
+        request(createServer({ foo: 'bar', fizz: 'buzz' }))
+          .get('/')
+          .set('Accept', 'text/html')
+          .expect('Content-Type', /text\/html/)
+          .expect(/<title>Error<\/title>/)
+          .expect(/<h2><em>500<\/em> Error<\/h2>/)
+          .expect(/<li>{ foo: &#39;bar&#39;, fizz: &#39;buzz&#39; }<\/li>/)
+          .expect(500, done)
+      })
+    })
+
+    describe('when "Accept: application/json"', () => {
+      it('should return a json response', (done) => {
+        const body = {
+          error: {
+            message: 'boom!',
+            description: 'it went this way',
+            stack: error.stack.toString()
+          }
+        }
+
+        request(server)
+          .get('/')
+          .set('Accept', 'application/json')
+          .expect('Content-Type', /application\/json/)
+          .expect(500, body, done)
+      })
+    })
+
+    describe('when "Accept: text/plain"', () => {
+      it('should return a plain text response', (done) => {
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect('Content-Type', /text\/plain/)
+          .expect(500, error.stack.toString(), done)
+      })
+    })
+
+    describe('when "Accept: x-unknown"', () => {
+      it('should return a plain text response', (done) => {
+        request(server)
+          .get('/')
+          .set('Accept', 'x-unknown')
+          .expect('Content-Type', /text\/plain/)
+          .expect(500, error.stack.toString(), done)
+      })
+    })
+  })
+
+  describe('headers sent', () => {
+    let server
+
+    before(() => {
+      const _errorHandler = errorHandler()
+      server = http.createServer((req, res) => {
+        res.end('0')
+        process.nextTick(() => {
+          _errorHandler(new Error('boom!'), req, res, (error) => {
+            process.nextTick(() => {
+              throw error
+            })
+          })
+        })
+      })
+    })
+
+    it('should not die', (done) => {
+      request(server)
+        .get('/')
+        .expect(200, done)
+    })
+  })
+
+  describe('console', () => {
+    let _consoleerror
+
+    before(() => {
+      _consoleerror = console.error
+      process.env.NODE_ENV = ''
+    })
+
+    afterEach(() => {
+      console.error = _consoleerror
+      process.env.NODE_ENV = 'test'
+    })
+
+    it('should output error', (done) => {
+      const cb = after(2, done)
+      const error = new Error('boom!')
+      const server = createServer(error)
+
+      console.error = function() {
+        const log = util.format.apply(null, arguments)
+
+        if (log !== error.stack.toString()) {
+          return _consoleerror.apply(this, arguments)
+        }
+
+        cb()
+      }
+
+      request(server)
+        .get('/')
+        .set('Accept', 'text/plain')
+        .expect(500, error.stack.toString(), cb)
+    })
+  })
+})
+
+describe('errorHandler(options)', () => {
+  describe('log', () => {
+    it('should reject a string', () => {
+      assert.throws(errorHandler.bind(null, {log: 'yes, please'}), /option log must be/)
+    })
+
+    describe('when "undefined"', () => {
+      let _consoleerror
+
+      before(() => {
+        _consoleerror = console.error
+      })
+
+      afterEach(() => {
+        console.error = _consoleerror
+      })
+
+      describe('when NODE_ENV == test', () => {
+        alterEnvironment('NODE_ENV', 'test')
+
+        it('should produce no output', (done) => {
+          const error = new Error('boom!')
+          const server = createServer(error)
+
+          console.error = function() {
+            const log = util.format.apply(null, arguments)
+
+            if (log !== error.stack.toString()) {
+              return _consoleerror.apply(this, arguments)
+            }
+
+            done(new Error('console.error written to'))
+          }
+
+          request(server)
+            .get('/')
+            .set('Accept', 'text/plain')
+            .expect(500, error.stack.toString(), done)
+        })
+      })
+
+      describe('when NODE_ENV != test', () => {
+        alterEnvironment('NODE_ENV', '')
+
+        it('should write to console', (done) => {
+          const cb = after(2, done)
+          const error = new Error('boom!')
+          const server = createServer(error)
+
+          console.error = function() {
+            const log = util.format.apply(null, arguments)
+
+            if (log !== error.stack.toString()) {
+              return _consoleerror.apply(this, arguments)
+            }
+
+            cb()
+          }
+
+          request(server)
+            .get('/')
+            .set('Accept', 'text/plain')
+            .expect(500, error.stack.toString(), cb)
+        })
+      })
+    })
+
+    describe('when "true"', () => {
+      let _consoleerror
+
+      before(() => {
+        _consoleerror = console.error
+      })
+
+      afterEach(() => {
+        console.error = _consoleerror
+      })
+
+      it('should write to console', (done) => {
+        const cb = after(2, done)
+        const error = new Error('boom!')
+        const server = createServer(error, {log: true})
+
+        console.error = function() {
+          const log = util.format.apply(null, arguments)
+
+          if (log !== error.stack.toString()) {
+            return _consoleerror.apply(this, arguments)
+          }
+
+          cb()
+        }
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect(500, error.stack.toString(), cb)
+      })
+    })
+
+    describe('when "false"', () => {
+      let _consoleerror
+
+      alterEnvironment('NODE_ENV', '')
+
+      before(() => {
+        _consoleerror = console.error
+      })
+
+      afterEach(() => {
+        console.error = _consoleerror
+      })
+
+      it('should not write to console', (done) => {
+        const error = new Error('boom!')
+        const server = createServer(error, {log: false})
+
+        console.error = function() {
+          const log = util.format.apply(null, arguments)
+
+          if (log !== error.stack.toString()) {
+            return _consoleerror.apply(this, arguments)
+          }
+
+          done(new Error('console.error written to'))
+        }
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect(500, error.stack.toString(), done)
+      })
+    })
+
+    describe('when a function', () => {
+      it('should call function', (done) => {
+        const cb = after(2, done)
+        const error = new Error('boom!')
+        const server = createServer(error, {log: log})
+
+        function log(err, str, req, res) {
+          assert.equal(err, error)
+          assert.equal(str, error.stack.toString())
+          assert.equal(req.url, '/')
+          assert.equal(res.statusCode, 500)
+          cb()
+        }
+
+        request(server)
+          .get('/')
+          .set('Accept', 'text/plain')
+          .expect(500, error.stack.toString(), cb)
+      })
+    })
+  })
+})
+
+function createServer(error, options) {
+  const _errorHandler = errorHandler(options)
+
+  return http.createServer((req, res) => {
+    _errorHandler(error, req, res, (err) => {
+      res.statusCode = err ? 500 : 404
+      res.end(err ? `Critical: ${err.stack}` : 'oops')
+    })
+  })
+}
+
+function alterEnvironment(key, value) {
+  let prev
+
+  before(() => {
+    prev = process.env[key]
+    process.env[key] = value
+  })
+  after(() => {
+    process.env[key] = prev
+  })
+}
